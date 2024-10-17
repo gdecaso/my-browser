@@ -2,8 +2,7 @@ import tkinter
 import tkinter.font
 
 from parser import HTMLParser
-from layout import DocumentLayout, VSTEP, \
-  paint_tree  # TODO: replace VSTEP with a layout_item height prop
+from layout import DocumentLayout, paint_tree, VSTEP
 from url import URL
 
 WIDTH, HEIGHT = 800, 600
@@ -50,12 +49,12 @@ class Browser:
                                    self.window.winfo_width()-1,
                                    self.window.winfo_height() * scroll_ratio + scroll_bar_height / 2,
                                    fill="blue", outline="blue")
-    for x, y, c, f in self.display_list:
-      if y > self.scroll + self.window.winfo_height():
+    for cmd in self.display_list:
+      if cmd.top > self.scroll + self.window.winfo_height():
         continue
-      if y + VSTEP < self.scroll:
+      if cmd.bottom < self.scroll:
         continue
-      self.canvas.create_text(x, y - self.scroll, text=c, anchor=tkinter.NW, font=f)
+      cmd.execute(self.scroll, self.canvas)
 
   def load(self, url):
     body = url.request()
@@ -66,7 +65,7 @@ class Browser:
 
   def update_layout(self, width):
     self.document.layout(width)
-    self.max_scroll = self.document.height
+    self.max_scroll = VSTEP + self.document.y + self.document.height - self.window.winfo_height()
     self.display_list = []
     paint_tree(self.document, self.display_list)
 

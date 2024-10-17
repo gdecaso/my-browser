@@ -1,4 +1,6 @@
 import tkinter.font
+
+from draw import DrawText, DrawRect
 from parser import Text, Element
 
 HSTEP, VSTEP = 13, 18
@@ -164,7 +166,15 @@ class BlockLayout:
     self.line = []
 
   def paint(self):
-    return self.display_list
+    cmds = []
+    if isinstance(self.node, Element) and self.node.tag == "pre":
+      x2, y2 = self.x + self.width, self.y + self.height
+      rect = DrawRect(self.x, self.y, x2, y2, "gray")
+      cmds.append(rect)
+    if self.layout_mode() == "inline":
+      for x, y, word, font in self.display_list:
+        cmds.append(DrawText(x, y, word, font))
+    return cmds
 
 
 class DocumentLayout:
