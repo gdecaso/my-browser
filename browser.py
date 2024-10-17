@@ -1,8 +1,9 @@
 import tkinter
 import tkinter.font
 
-from parser import HTMLParser, print_tree
-from layout import Layout, VSTEP # TODO: replace VSTEP with a layout_item height prop
+from parser import HTMLParser
+from layout import DocumentLayout, VSTEP, \
+  paint_tree  # TODO: replace VSTEP with a layout_item height prop
 from url import URL
 
 WIDTH, HEIGHT = 800, 600
@@ -17,10 +18,11 @@ class Browser:
         height=HEIGHT
     )
     self.canvas.pack(fill=tkinter.BOTH, expand=1)
-    self.display_list = []
     self.scroll = 0
     self.max_scroll = 0
     self.nodes = None
+    self.document: DocumentLayout | None = None
+    self.display_list = []
     self.window.update()
     self.window.bind("<MouseWheel>", lambda e: self.do_scroll(-e.delta))
     self.window.bind("<Down>", lambda e: self.do_scroll(50))
@@ -30,8 +32,7 @@ class Browser:
     self.window.bind("<Configure>", self.resize)
 
   def resize(self, e):
-    self.display_list = Layout(self.nodes, e.width).display_list
-    self.calculate_max_scroll()
+    self.update_layout(e.width)
     self.draw()
 
   def do_scroll(self, amount):
@@ -59,14 +60,15 @@ class Browser:
   def load(self, url):
     body = url.request()
     self.nodes = HTMLParser(body).parse()
-    self.display_list = Layout(self.nodes, self.window.winfo_width()).display_list
-    self.calculate_max_scroll()
+    self.document = DocumentLayout(self.nodes)
+    self.update_layout(self.window.winfo_width())
     self.draw()
 
-  def calculate_max_scroll(self):
-    self.max_scroll = 0
-    for _, cursor_y, _, _ in self.display_list:
-      self.max_scroll = max(cursor_y + VSTEP - self.window.winfo_height(), self.max_scroll)
+  def update_layout(self, width):
+    self.document.layout(width)
+    self.max_scroll = self.document.height
+    self.display_list = []
+    paint_tree(self.document, self.display_list)
 
 
 if __name__ == "__main__":
