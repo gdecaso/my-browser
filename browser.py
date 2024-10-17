@@ -1,7 +1,7 @@
 import tkinter
 import tkinter.font
 
-from ast import lex
+from parser import HTMLParser, print_tree
 from layout import Layout, VSTEP # TODO: replace VSTEP with a layout_item height prop
 from url import URL
 
@@ -21,7 +21,7 @@ class Browser:
     self.display_list = []
     self.scroll = 0
     self.max_scroll = 0
-    self.tokens = []
+    self.nodes = None
     self.window.update()
     self.window.bind("<MouseWheel>", self.mousewheel)
     self.window.bind("<Down>", self.scrolldown)
@@ -29,7 +29,7 @@ class Browser:
     self.window.bind("<Configure>", self.resize)
 
   def resize(self, e):
-    self.display_list = Layout(self.tokens, e.width).display_list
+    self.display_list = Layout(self.nodes, e.width).display_list
     self.calculate_max_scroll()
     self.draw()
 
@@ -66,8 +66,8 @@ class Browser:
 
   def load(self, url):
     body = url.request()
-    self.tokens = lex(body)
-    self.display_list = Layout(self.tokens, self.window.winfo_width()).display_list
+    self.nodes = HTMLParser(body).parse()
+    self.display_list = Layout(self.nodes, self.window.winfo_width()).display_list
     self.calculate_max_scroll()
     self.draw()
 
