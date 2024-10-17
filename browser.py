@@ -6,7 +6,6 @@ from layout import Layout, VSTEP # TODO: replace VSTEP with a layout_item height
 from url import URL
 
 WIDTH, HEIGHT = 800, 600
-SCROLL_STEP = 50
 
 
 class Browser:
@@ -23,9 +22,11 @@ class Browser:
     self.max_scroll = 0
     self.nodes = None
     self.window.update()
-    self.window.bind("<MouseWheel>", self.mousewheel)
-    self.window.bind("<Down>", self.scrolldown)
-    self.window.bind("<Up>", self.scrollup)
+    self.window.bind("<MouseWheel>", lambda e: self.do_scroll(-e.delta))
+    self.window.bind("<Down>", lambda e: self.do_scroll(50))
+    self.window.bind("<Up>", lambda e: self.do_scroll(-50))
+    self.window.bind("<Next>", lambda e: self.do_scroll(500))
+    self.window.bind("<Prior>", lambda e: self.do_scroll(-500))
     self.window.bind("<Configure>", self.resize)
 
   def resize(self, e):
@@ -36,15 +37,6 @@ class Browser:
   def do_scroll(self, amount):
     self.scroll = min(max(0, self.scroll + amount), self.max_scroll)
     self.draw()
-
-  def mousewheel(self, e):
-    self.do_scroll(-e.delta)
-
-  def scrolldown(self, e):
-    self.do_scroll(SCROLL_STEP)
-
-  def scrollup(self, e):
-    self.do_scroll(-SCROLL_STEP)
 
   def draw(self):
     self.canvas.delete("all")
