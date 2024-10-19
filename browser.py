@@ -1,11 +1,13 @@
 import tkinter
 import tkinter.font
 
+from css import CSSParser
 from parser import HTMLParser
-from layout import DocumentLayout, paint_tree, VSTEP
+from layout import DocumentLayout, paint_tree, VSTEP, style
 from url import URL
 
 WIDTH, HEIGHT = 800, 600
+DEFAULT_STYLE_SHEET = CSSParser(open("browser.css").read()).parse()
 
 
 class Browser:
@@ -64,6 +66,8 @@ class Browser:
     self.draw()
 
   def update_layout(self, width):
+    rules = DEFAULT_STYLE_SHEET.copy()
+    style(self.document.node, rules)
     self.document.layout(width)
     self.max_scroll = VSTEP + self.document.y + self.document.height - self.window.winfo_height()
     self.display_list = []
