@@ -1,6 +1,7 @@
 class Text:
   def __init__(self, text, parent):
     self.text = text
+    self.style = {}
     self.children = []
     self.parent = parent
 
@@ -11,12 +12,20 @@ class Text:
 class Element:
   def __init__(self, tag, attributes, parent):
     self.tag = tag
+    self.style = {}
     self.attributes = attributes
     self.children = []
     self.parent = parent
 
   def __repr__(self):
     return "<" + self.tag + " " + repr(self.attributes) + ">"
+
+
+def tree_to_list(tree, list):
+  list.append(tree)
+  for child in tree.children:
+    tree_to_list(child, list)
+  return list
 
 
 class HTMLParser:

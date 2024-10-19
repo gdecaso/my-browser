@@ -1,9 +1,9 @@
 import tkinter
 import tkinter.font
 
-from css import CSSParser
-from parser import HTMLParser
-from layout import DocumentLayout, paint_tree, VSTEP, style
+from css import CSSParser, cascade_priority, style
+from parser import HTMLParser, tree_to_list, Element
+from layout import DocumentLayout, paint_tree, VSTEP
 from url import URL
 
 WIDTH, HEIGHT = 800, 600
@@ -62,12 +62,29 @@ class Browser:
     body = url.request()
     self.nodes = HTMLParser(body).parse()
     self.document = DocumentLayout(self.nodes)
+    rules = self.fetch_css(url)
+    style(self.nodes, sorted(rules, key=cascade_priority))
     self.update_layout(self.window.winfo_width())
     self.draw()
 
-  def update_layout(self, width):
+  def fetch_css(self, url):
     rules = DEFAULT_STYLE_SHEET.copy()
-    style(self.document.node, rules)
+    links = [node.attributes["href"]
+             for node in tree_to_list(self.nodes, [])
+             if isinstance(node, Element)
+             and node.tag == "link"
+             and node.attributes.get("rel") == "stylesheet"
+             and "href" in node.attributes]
+    for link in links:
+      style_url = url.resolve(link)
+      try:
+        body = style_url.request()
+      except:
+        continue
+      rules.extend(CSSParser(body).parse())
+    return rules
+
+  def update_layout(self, width):
     self.document.layout(width)
     self.max_scroll = VSTEP + self.document.y + self.document.height - self.window.winfo_height()
     self.display_list = []

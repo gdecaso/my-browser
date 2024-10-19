@@ -9,21 +9,6 @@ HSTEP, VSTEP = 13, 18
 FONTS = {}
 
 
-def style(node, rules):
-  node.style = {}
-  for selector, body in rules:
-    if not selector.matches(node):
-      continue
-    for property, value in body.items():
-      node.style[property] = value
-  if isinstance(node, Element) and "style" in node.attributes:
-    pairs = CSSParser(node.attributes["style"]).body()
-    for property, value in pairs.items():
-      node.style[property] = value
-  for child in node.children:
-    style(child, rules)
-
-
 def get_font(size, weight, style):
   key = (size, weight, style)
   if key not in FONTS:
@@ -74,9 +59,10 @@ class BlockLayout:
     else:
       self.cursor_x = 0
       self.cursor_y = 0
-      self.weight = "normal"
-      self.style = "roman"
-      self.size = 12
+      # self.weight = "normal"
+      # self.style = "roman"
+      # self.size = 12
+      # TODO
       self.line = []
       self.recurse(self.node)
       self.flush()
@@ -97,69 +83,50 @@ class BlockLayout:
     else:
       return "block"
 
-  def recurse(self, tree):
-    if isinstance(tree, Text):
-      for word in tree.text.split():
-        self.word(word)
+  def recurse(self, node):
+    if isinstance(node, Text):
+      for word in node.text.split():
+        self.word(node, word)
     else:
-      self.open_tag(tree.tag)
-      for child in tree.children:
+      self.open_tag(node.tag)
+      for child in node.children:
         self.recurse(child)
-      self.close_tag(tree.tag)
+      self.close_tag(node.tag)
 
   def open_tag(self, tag):
-    if tag == "i":
-      self.style = "italic"
-    elif tag == "b":
-      self.weight = "bold"
-    elif tag == "small":
-      self.size -= 2
-    elif tag == "big":
-      self.size += 4
-    elif tag == "br":
+    # TODO
+    # if tag == "i":
+    #   self.style = "italic"
+    # elif tag == "b":
+    #   self.weight = "bold"
+    # elif tag == "small":
+    #   self.size -= 2
+    # elif tag == "big":
+    #   self.size += 4
+    if tag == "br":
       self.flush()
 
   def close_tag(self, tag):
-    if tag == "i":
-      self.style = "roman"
-    elif tag == "b":
-      self.weight = "normal"
-    elif tag == "small":
-      self.size += 2
-    elif tag == "big":
-      self.size -= 4
-    elif tag == "p":
+    # TODO
+    # if tag == "i":
+    #   self.style = "roman"
+    # elif tag == "b":
+    #   self.weight = "normal"
+    # elif tag == "small":
+    #   self.size += 2
+    # elif tag == "big":
+    #   self.size -= 4
+    if tag == "p":
       self.flush()
       self.cursor_y += VSTEP
 
-  def token(self, tok):
-    if isinstance(tok, Text):
-      for word in tok.text.split():
-        self.word(word)
-    elif tok.tag == "i":
-      self.style = "italic"
-    elif tok.tag == "/i":
-      self.style = "roman"
-    elif tok.tag == "b":
-      self.weight = "bold"
-    elif tok.tag == "/b":
-      self.weight = "normal"
-    elif tok.tag == "small":
-      self.size -= 2
-    elif tok.tag == "/small":
-      self.size += 2
-    elif tok.tag == "big":
-      self.size += 4
-    elif tok.tag == "/big":
-      self.size -= 4
-    elif tok.tag == "br":
-      self.flush()
-    elif tok.tag == "/p":
-      self.flush()
-      self.cursor_y += VSTEP
-
-  def word(self, word):
-    font = get_font(self.size, self.weight, self.style)
+  def word(self, node, word):
+    weight = node.style["font-weight"]
+    style = node.style["font-style"]
+    if style == "normal":
+      style = "roman"
+    size = int(float(node.style["font-size"][:-2]) * .75)
+    font = get_font(size, weight, style)
     w = font.measure(word)
     if self.cursor_x + w > self.width:
       self.flush()

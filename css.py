@@ -1,17 +1,27 @@
 from parser import Element
 
+INHERITED_PROPERTIES = {
+    "font-size": "16px",
+    "font-style": "normal",
+    "font-weight": "normal",
+    "color": "black",
+}
+
 
 class TagSelector:
   def __init__(self, tag):
     self.tag = tag
+    self.priority = 1
 
   def matches(self, node):
     return isinstance(node, Element) and self.tag == node.tag
+
 
 class DescendantSelector:
   def __init__(self, ancestor, descendant):
     self.ancestor = ancestor
     self.descendant = descendant
+    self.priority = ancestor.priority + descendant.priority
 
   def matches(self, node):
     if not self.descendant.matches(node):
@@ -21,6 +31,11 @@ class DescendantSelector:
         return True
       node = node.parent
     return False
+
+
+def cascade_priority(rule):
+  selector, body = rule
+  return selector.priority
 
 
 class CSSParser:
@@ -111,3 +126,31 @@ class CSSParser:
         else:
           break
     return rules
+
+
+def style(node, rules):
+  node.style = {}
+  for property, default_value in INHERITED_PROPERTIES.items():
+    if node.parent:
+      node.style[property] = node.parent.style[property]
+    else:
+      node.style[property] = default_value
+  for selector, body in rules:
+    if not selector.matches(node):
+      continue
+    for property, value in body.items():
+      node.style[property] = value
+  if isinstance(node, Element) and "style" in node.attributes:
+    pairs = CSSParser(node.attributes["style"]).body()
+    for property, value in pairs.items():
+      node.style[property] = value
+  if node.style["font-size"].endswith("%"):
+    if node.parent:
+      parent_font_size = node.parent.style["font-size"]
+    else:
+      parent_font_size = INHERITED_PROPERTIES["font-size"]
+    node_pct = float(node.style["font-size"][:-1]) / 100
+    parent_px = float(parent_font_size[:-2])
+    node.style["font-size"] = str(node_pct * parent_px) + "px"
+  for child in node.children:
+    style(child, rules)
